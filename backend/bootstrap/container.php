@@ -36,6 +36,12 @@ use App\Infrastructure\Repositories\SegHIS\SegHISLaboratoryRepository;
 use App\Infrastructure\Repositories\SegHIS\SegHISPrescriptionRepository;
 use App\Infrastructure\Repositories\SegHIS\SegHISRadiologyRepository;
 
+use App\Domain\Repositories\Auth\UserRepositoryInterface;
+use App\Domain\Repositories\Auth\SessionRepositoryInterface;
+use App\Infrastructure\Repositories\Auth\UserRepository;
+use App\Infrastructure\Repositories\Auth\SessionRepository;
+use App\Infrastructure\Logging\AuditLogger;
+
 use function DI\autowire;
 
 $builder = new ContainerBuilder();
@@ -197,6 +203,23 @@ $container->set(
 $container->set(
     RadiologyRepositoryInterface::class,
     DI\autowire(SegHISRadiologyRepository::class)
+);
+
+$container->set(
+    UserRepositoryInterface::class,
+    DI\autowire(UserRepository::class)
+);
+
+$container->set(
+    SessionRepositoryInterface::class,
+    DI\autowire(SessionRepository::class)
+);
+
+$container->set(
+    AuditLogger::class,
+    function () use ($container) {
+        return new AuditLogger($container->get(Database::class));
+    }
 );
 
 return $container;

@@ -6,6 +6,8 @@ namespace App\Framework\Routes;
 
 use App\Framework\Http\Request;
 use App\Framework\Http\Response;
+use App\Framework\Middlewares\MiddlewareInterface;
+use Closure;
 use DI\Container;
 
 class Router
@@ -21,26 +23,13 @@ class Router
     public function dispatch(Request $request): void
     {
         $method = strtoupper($request->method());
-
         $uri = $request->uri();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Remove base folder when running under XAMPP
-        |--------------------------------------------------------------------------
-        */
 
         $basePath = '/SegHIS/backend/public';
 
         if (str_starts_with($uri, $basePath)) {
             $uri = substr($uri, strlen($basePath));
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Normalize URI
-        |--------------------------------------------------------------------------
-        */
 
         if ($uri === '') {
             $uri = '/';
@@ -53,38 +42,66 @@ class Router
         $route = $this->routes[$method][$uri] ?? null;
 
         if ($route === null) {
-            Response::json(
-                null,
-                'Route not found.',
-                404
-            );
+            Response::json(null, 'Route not found.', 404);
 
             return;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Controller Route
-        |--------------------------------------------------------------------------
-        */
+        if ($route instanceof Closure) {
+            $route($request);
 
-        if (is_array($route)) {
+            return;
+        }
 
-            [$controllerClass, $controllerMethod] = $route;
+        if (is_array($route) && array_key_exists('action', $route)) {
+            $this->dispatchProtected($request, $route);
 
+            return;
+        }
+
+        // Legacy [Controller, method] format (no middleware)
+        [$controllerClass, $controllerMethod] = $route;
+
+        $controller = $this->container->get($controllerClass);
+        $controller->{$controllerMethod}();
+    }
+
+    private function dispatchProtected(Request $request, array $route): void
+    {
+        [$controllerClass, $controllerMethod] = $route['action'];
+        $middlewareStack = $route['middleware'] ?? [];
+
+        $handler = function (Request $request) use ($controllerClass, $controllerMethod): void {
             $controller = $this->container->get($controllerClass);
-
             $controller->{$controllerMethod}();
+        };
 
-            return;
+        $pipeline = array_reduce(
+            array_reverse($middlewareStack),
+            function (callable $next, $middleware): callable {
+                return function (Request $request) use ($middleware, $next): mixed {
+                    $instance = $this->resolveMiddleware($middleware);
+
+                    return $instance->handle($request, $next);
+                };
+            },
+            $handler
+        );
+
+        $pipeline($request);
+    }
+
+    private function resolveMiddleware(mixed $middleware): MiddlewareInterface
+    {
+        if ($middleware instanceof MiddlewareInterface) {
+            return $middleware;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Closure Route
-        |--------------------------------------------------------------------------
-        */
+        if (is_string($middleware)) {
+            return $this->container->get($middleware);
+        }
 
-        $route($request);
+        // Closure factory, e.g. fn () => new RoleMiddleware(['administrator'])
+        return $middleware();
     }
 }

@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
+use App\Framework\Controllers\AuthController;
 use App\Framework\Controllers\DepartmentController;
 use App\Framework\Controllers\DoctorController;
 use App\Framework\Controllers\NurseController;
 use App\Framework\Controllers\PatientController;
 use App\Framework\Http\Request;
 use App\Framework\Http\Response;
+use App\Framework\Middlewares\AuthMiddleware;
+use App\Framework\Middlewares\RoleMiddleware;
 
 return [
 
@@ -35,47 +38,58 @@ return [
             );
         },
 
+        '/auth/me' => [
+            'middleware' => [AuthMiddleware::class],
+            'action' => [AuthController::class, 'me'],
+        ],
+
         /*
         |--------------------------------------------------------------------------
-        | SegHIS
+        | SegHIS (protected)
         |--------------------------------------------------------------------------
         */
 
         '/seghis/departments' => [
-            DepartmentController::class,
-            'index',
+            'middleware' => [AuthMiddleware::class],
+            'action' => [DepartmentController::class, 'index'],
         ],
 
         '/seghis/patients' => [
-            PatientController::class,
-            'index',
+            'middleware' => [
+                AuthMiddleware::class,
+                fn () => new RoleMiddleware(['administrator', 'doctor', 'nurse']),
+            ],
+            'action' => [PatientController::class, 'index'],
         ],
 
         '/seghis/doctors' => [
-            DoctorController::class,
-            'index',
+            'middleware' => [AuthMiddleware::class],
+            'action' => [DoctorController::class, 'index'],
         ],
 
         '/seghis/nurses' => [
-            NurseController::class,
-            'index',
+            'middleware' => [
+                AuthMiddleware::class,
+                fn () => new RoleMiddleware(['administrator']),
+            ],
+            'action' => [NurseController::class, 'index'],
         ],
     ],
 
     'POST' => [
+        '/auth/login' => [AuthController::class, 'login'],
+        '/auth/refresh' => [AuthController::class, 'refresh'],
 
+        '/auth/logout' => [
+            'middleware' => [AuthMiddleware::class],
+            'action' => [AuthController::class, 'logout'],
+        ],
     ],
 
-    'PUT' => [
+    'PUT' => [],
 
-    ],
+    'PATCH' => [],
 
-    'PATCH' => [
-
-    ],
-
-    'DELETE' => [
-
-    ],
+    'DELETE' => [],
 
 ];
