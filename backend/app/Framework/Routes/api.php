@@ -49,12 +49,12 @@ return [
         |--------------------------------------------------------------------------
         */
 
-        '/seghis/departments' => [
+        '/seghis/departments/show' => [
             'middleware' => [AuthMiddleware::class],
             'action' => [DepartmentController::class, 'index'],
         ],
 
-        '/seghis/patients' => [
+        '/seghis/patients/show' => [
             'middleware' => [
                 AuthMiddleware::class,
                 fn () => new RoleMiddleware(['administrator', 'doctor', 'nurse']),
@@ -70,7 +70,15 @@ return [
             'action'=>[DoctorController::class,'index']
         ],
 
-        '/seghis/nurses' => [
+        '/seghis/nurses/show' => [
+            'middleware' => [
+                AuthMiddleware::class,
+                fn () => new RoleMiddleware(['administrator']),
+            ],
+            'action' => [NurseController::class, 'index'],
+        ],
+
+        '/seghis/encounter/show' => [
             'middleware' => [
                 AuthMiddleware::class,
                 fn () => new RoleMiddleware(['administrator']),
