@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Framework\Http;
 
 class Request
 {
+    private ?array $user = null;
+
     public function method(): string
     {
         return strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
@@ -78,5 +82,21 @@ class Request
         }
 
         return null;
+    }
+
+    /**
+     * Store the authenticated user.
+     */
+    public function setUser(array $user): void
+    {
+        $this->user = $user;
+    }
+
+    /**
+     * Get the authenticated user.
+     */
+    public function user(): ?array
+    {
+        return $this->user;
     }
 }

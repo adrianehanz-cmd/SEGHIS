@@ -6,16 +6,13 @@ namespace App\Domain\Repositories\SegHIS;
 
 interface NurseRepositoryInterface
 {
-    public function getAll(): mixed;
+    /**
+     * Retrieve all nurses.
+     */
+    public function all(): array;
 
-    public function getById(string|int $id): mixed;
-
-    public function getByDepartment(
-        string $departmentId
-    ): mixed;
-
-    public function searchByName(
-        string $firstName,
-        string $lastName
-    ): mixed;
+    /**
+     * Find nurse by ID.
+     */
+    public function find(string $nurseId): array;
 }

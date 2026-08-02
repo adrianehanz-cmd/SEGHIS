@@ -4,74 +4,42 @@ declare(strict_types=1);
 
 namespace App\Framework\Controllers;
 
-use App\Application\UseCases\Patients\GetPatientUseCase;
 use App\Application\UseCases\Patients\GetPatientsUseCase;
-use App\Application\UseCases\Patients\SearchPatientsUseCase;
-use Throwable;
+use App\Framework\Http\Request;
+use App\Framework\Http\Response;
 
-final class PatientController extends ApiController
+final class PatientController
 {
     public function __construct(
-        private readonly GetPatientsUseCase $getPatients,
-        private readonly GetPatientUseCase $getPatient,
-        private readonly SearchPatientsUseCase $searchPatients
+        private readonly GetPatientsUseCase $useCase
     ) {
     }
 
     public function index(): void
     {
-        try {
-            $patients = $this->getPatients->execute();
-
-            $this->success($patients);
-        } catch (Throwable $exception) {
-            $this->handleException($exception);
-        }
+        Response::json(
+            $this->useCase->execute(),
+            'Patients retrieved successfully.'
+        );
     }
 
-    public function show(
-        string $id
-    ): void {
-        try {
-            $patient = $this->getPatient->execute($id);
-
-            $this->success($patient);
-        } catch (Throwable $exception) {
-            $this->handleException($exception);
-        }
-    }
-
-    public function search(): void
+    public function show(Request $request): void
     {
-        try {
-            $firstName = trim(
-                $_GET['first_name'] ?? ''
-            );
+        $id = (string) $request->query()['id'];
 
-            $lastName = trim(
-                $_GET['last_name'] ?? ''
-            );
+        Response::json(
+            $this->useCase->find($id),
+            'Patient retrieved successfully.'
+        );
+    }
 
-            if (
-                $firstName === '' &&
-                $lastName === ''
-            ) {
-                $this->error(
-                    'At least one search parameter is required.',
-                    422
-                );
+    public function search(Request $request): void
+    {
+        $keyword = (string) $request->query()['keyword'];
 
-                return;
-            }
-
-            $patients = $this->searchPatients->execute(
-                $firstName,
-                $lastName
-            );
-
-            $this->success($patients);
-        } catch (Throwable $exception) {
-            $this->handleException($exception);
-        }
+        Response::json(
+            $this->useCase->search($keyword),
+            'Patients retrieved successfully.'
+        );
     }
 }

@@ -62,9 +62,12 @@ return [
             'action' => [PatientController::class, 'index'],
         ],
 
-        '/seghis/doctors' => [
-            'middleware' => [AuthMiddleware::class],
-            'action' => [DoctorController::class, 'index'],
+        '/seghis/doctors/show'=>[
+              'middleware'=>[
+                AuthMiddleware::class,
+                fn()=>new RoleMiddleware(['administrator']),
+            ],
+            'action'=>[DoctorController::class,'index']
         ],
 
         '/seghis/nurses' => [

@@ -1,225 +1,206 @@
 <?php
 
-use App\Framework\Middlewares\CorsMiddleware;
-use App\Framework\Middlewares\JsonMiddleware;
-use App\Framework\Middlewares\SecurityHeadersMiddleware;
-use App\Framework\Middlewares\RequestLoggingMiddleware;
-use App\Framework\Routes\Router;
-use App\Infrastructure\Database\Database;
-use App\Infrastructure\Logging\Logger;
-use App\Infrastructure\Security\JWTManager;
-use DI\ContainerBuilder;
-use App\Infrastructure\ExternalAPI\SegHIS\Client\SegHISHttpClient;
-use App\Infrastructure\ExternalAPI\SegHIS\Services\SegHISDepartmentService;
-use App\Infrastructure\ExternalAPI\SegHIS\Services\SegHISDoctorService;
-use App\Infrastructure\ExternalAPI\SegHIS\Services\SegHISEncounterService;
-use App\Infrastructure\ExternalAPI\SegHIS\Services\SegHISLaboratoryService;
-use App\Infrastructure\ExternalAPI\SegHIS\Services\SegHISNurseService;
-use App\Infrastructure\ExternalAPI\SegHIS\Services\SegHISPatientService;
-use App\Infrastructure\ExternalAPI\SegHIS\Services\SegHISPrescriptionService;
-use App\Infrastructure\ExternalAPI\SegHIS\Services\SegHISRadiologyService;
+declare(strict_types=1);
+
+use App\Domain\Repositories\UserRepositoryInterface;
+
 use App\Domain\Repositories\SegHIS\PatientRepositoryInterface;
 use App\Domain\Repositories\SegHIS\DepartmentRepositoryInterface;
 use App\Domain\Repositories\SegHIS\DoctorRepositoryInterface;
 use App\Domain\Repositories\SegHIS\NurseRepositoryInterface;
-use App\Domain\Repositories\SegHIS\EncounterRepositoryInterface;
-use App\Domain\Repositories\SegHIS\LaboratoryRepositoryInterface;
-use App\Domain\Repositories\SegHIS\PrescriptionRepositoryInterface;
-use App\Domain\Repositories\SegHIS\RadiologyRepositoryInterface;
 
-use App\Infrastructure\Repositories\SegHIS\SegHISPatientRepository;
-use App\Infrastructure\Repositories\SegHIS\SegHISDepartmentRepository;
-use App\Infrastructure\Repositories\SegHIS\SegHISDoctorRepository;
-use App\Infrastructure\Repositories\SegHIS\SegHISNurseRepository;
-use App\Infrastructure\Repositories\SegHIS\SegHISEncounterRepository;
-use App\Infrastructure\Repositories\SegHIS\SegHISLaboratoryRepository;
-use App\Infrastructure\Repositories\SegHIS\SegHISPrescriptionRepository;
-use App\Infrastructure\Repositories\SegHIS\SegHISRadiologyRepository;
+use App\Infrastructure\Database\Database;
+use App\Infrastructure\Logging\Logger;
+use App\Infrastructure\Security\JwtService;
 
-use App\Domain\Repositories\Auth\UserRepositoryInterface;
-use App\Domain\Repositories\Auth\SessionRepositoryInterface;
-use App\Infrastructure\Repositories\Auth\UserRepository;
-use App\Infrastructure\Repositories\Auth\SessionRepository;
-use App\Infrastructure\Logging\AuditLogger;
+use App\Infrastructure\Repositories\MySQLUserRepository;
 
-use function DI\autowire;
+use App\Infrastructure\Repositories\SegHISPatientRepository;
+use App\Infrastructure\Repositories\SegHISDepartmentRepository;
+use App\Infrastructure\Repositories\SegHISDoctorRepository;
+use App\Infrastructure\Repositories\SegHISNurseRepository;
+
+use App\Infrastructure\ExternalAPI\SegHIS\SegHISClient;
+use App\Infrastructure\ExternalAPI\SegHIS\SegHISPatientService;
+use App\Infrastructure\ExternalAPI\SegHIS\SegHISDepartmentService;
+use App\Infrastructure\ExternalAPI\SegHIS\SegHISDoctorService;
+use App\Infrastructure\ExternalAPI\SegHIS\SegHISNurseService;
+
+use App\Application\UseCases\Patients\GetPatientsUseCase;
+use App\Application\UseCases\Departments\GetDepartmentsUseCase;
+use App\Application\UseCases\Doctors\GetDoctorsUseCase;
+use App\Application\UseCases\Nurses\GetNursesUseCase;
+
+use DI\ContainerBuilder;
 
 $builder = new ContainerBuilder();
 
 $container = $builder->build();
 
-$container->set(Database::class, function () {
-    $config = require __DIR__ . '/../app/Framework/Config/database.php';
+/*
+|--------------------------------------------------------------------------
+| Database
+|--------------------------------------------------------------------------
+*/
 
-    return new Database($config);
+$container->set(\PDO::class, function () {
+    return Database::connect();
 });
+
+/*
+|--------------------------------------------------------------------------
+| Logger
+|--------------------------------------------------------------------------
+*/
 
 $container->set(Logger::class, function () {
-    $config = require __DIR__ . '/../app/Framework/Config/logging.php';
 
-    return new Logger($config['path']);
+    $config = require __DIR__ .
+        '/../app/Framework/Config/logging.php';
+
+    return new Logger(
+        $config['path']
+    );
+
 });
 
-$container->set(JWTManager::class, function () {
-    return new JWTManager();
-});
+/*
+|--------------------------------------------------------------------------
+| JWT
+|--------------------------------------------------------------------------
+*/
 
-$container->set(Router::class, function () use ($container) {
-    return new Router($container);
-});
-
-$container->set(CorsMiddleware::class, function () {
-    return new CorsMiddleware();
-});
-
-$container->set(JsonMiddleware::class, function () {
-    return new JsonMiddleware();
-});
-
-$container->set(SecurityHeadersMiddleware::class, function () {
-    return new SecurityHeadersMiddleware();
-});
-
-$container->set(RequestLoggingMiddleware::class, function () use ($container) {
-    return new RequestLoggingMiddleware(
-            $container->get(Logger::class)
-        );
-    });
-
-    $container->set(
-    SegHISHttpClient::class,
-    function () {
-        return new SegHISHttpClient();
-    }
+$container->set(
+    JwtService::class,
+    fn() => new JwtService(
+        $_ENV['JWT_SECRET']
+    )
 );
+
+/*
+|--------------------------------------------------------------------------
+| SegHIS Client
+|--------------------------------------------------------------------------
+*/
+
+$container->set(
+    SegHISClient::class,
+    fn() => new SegHISClient()
+);
+
+/*
+|--------------------------------------------------------------------------
+| SegHIS Services
+|--------------------------------------------------------------------------
+*/
 
 $container->set(
     SegHISPatientService::class,
-    function () use ($container) {
-        return new SegHISPatientService(
-            $container->get(SegHISHttpClient::class)
-        );
-    }
-);
-
-$container->set(
-    SegHISDoctorService::class,
-    function () use ($container) {
-        return new SegHISDoctorService(
-            $container->get(SegHISHttpClient::class)
-        );
-    }
-);
-
-$container->set(
-    SegHISNurseService::class,
-    function () use ($container) {
-        return new SegHISNurseService(
-            $container->get(SegHISHttpClient::class)
-        );
-    }
+    fn($c) => new SegHISPatientService(
+        $c->get(SegHISClient::class)
+    )
 );
 
 $container->set(
     SegHISDepartmentService::class,
-    function () use ($container) {
-        return new SegHISDepartmentService(
-            $container->get(SegHISHttpClient::class)
-        );
-    }
+    fn($c) => new SegHISDepartmentService(
+        $c->get(SegHISClient::class)
+    )
 );
 
 $container->set(
-    SegHISEncounterService::class,
-    function () use ($container) {
-        return new SegHISEncounterService(
-            $container->get(SegHISHttpClient::class)
-        );
-    }
+    SegHISDoctorService::class,
+    fn($c) => new SegHISDoctorService(
+        $c->get(SegHISClient::class)
+    )
 );
 
 $container->set(
-    SegHISLaboratoryService::class,
-    function () use ($container) {
-        return new SegHISLaboratoryService(
-            $container->get(SegHISHttpClient::class)
-        );
-    }
+    SegHISNurseService::class,
+    fn($c) => new SegHISNurseService(
+        $c->get(SegHISClient::class)
+    )
 );
 
-$container->set(
-    SegHISPrescriptionService::class,
-    function () use ($container) {
-        return new SegHISPrescriptionService(
-            $container->get(SegHISHttpClient::class)
-        );
-    }
-);
+/*
+|--------------------------------------------------------------------------
+| User Repository
+|--------------------------------------------------------------------------
+*/
 
 $container->set(
-    SegHISRadiologyService::class,
-    function () use ($container) {
-        return new SegHISRadiologyService(
-            $container->get(SegHISHttpClient::class)
-        );
-    }
+    UserRepositoryInterface::class,
+    fn($c) => new MySQLUserRepository(
+        $c->get(\PDO::class)
+    )
 );
+
+/*
+|--------------------------------------------------------------------------
+| SegHIS Repositories
+|--------------------------------------------------------------------------
+*/
 
 $container->set(
     PatientRepositoryInterface::class,
-    DI\autowire(SegHISPatientRepository::class)
+    fn($c) => new SegHISPatientRepository(
+        $c->get(SegHISPatientService::class)
+    )
 );
 
 $container->set(
     DepartmentRepositoryInterface::class,
-    DI\autowire(SegHISDepartmentRepository::class)
+    fn($c) => new SegHISDepartmentRepository(
+        $c->get(SegHISDepartmentService::class)
+    )
 );
 
 $container->set(
     DoctorRepositoryInterface::class,
-    DI\autowire(SegHISDoctorRepository::class)
+    fn($c) => new SegHISDoctorRepository(
+        $c->get(SegHISDoctorService::class)
+    )
 );
 
 $container->set(
     NurseRepositoryInterface::class,
-    DI\autowire(SegHISNurseRepository::class)
+    fn($c) => new SegHISNurseRepository(
+        $c->get(SegHISNurseService::class)
+    )
+);
+
+/*
+|--------------------------------------------------------------------------
+| Use Cases
+|--------------------------------------------------------------------------
+*/
+
+$container->set(
+    GetPatientsUseCase::class,
+    fn($c) => new GetPatientsUseCase(
+        $c->get(PatientRepositoryInterface::class)
+    )
 );
 
 $container->set(
-    EncounterRepositoryInterface::class,
-    DI\autowire(SegHISEncounterRepository::class)
+    GetDepartmentsUseCase::class,
+    fn($c) => new GetDepartmentsUseCase(
+        $c->get(DepartmentRepositoryInterface::class)
+    )
 );
 
 $container->set(
-    LaboratoryRepositoryInterface::class,
-    DI\autowire(SegHISLaboratoryRepository::class)
+    GetDoctorsUseCase::class,
+    fn($c) => new GetDoctorsUseCase(
+        $c->get(DoctorRepositoryInterface::class)
+    )
 );
 
 $container->set(
-    PrescriptionRepositoryInterface::class,
-    DI\autowire(SegHISPrescriptionRepository::class)
-);
-
-$container->set(
-    RadiologyRepositoryInterface::class,
-    DI\autowire(SegHISRadiologyRepository::class)
-);
-
-$container->set(
-    UserRepositoryInterface::class,
-    DI\autowire(UserRepository::class)
-);
-
-$container->set(
-    SessionRepositoryInterface::class,
-    DI\autowire(SessionRepository::class)
-);
-
-$container->set(
-    AuditLogger::class,
-    function () use ($container) {
-        return new AuditLogger($container->get(Database::class));
-    }
+    GetNursesUseCase::class,
+    fn($c) => new GetNursesUseCase(
+        $c->get(NurseRepositoryInterface::class)
+    )
 );
 
 return $container;

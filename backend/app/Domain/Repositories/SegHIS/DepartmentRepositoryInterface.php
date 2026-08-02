@@ -6,5 +6,8 @@ namespace App\Domain\Repositories\SegHIS;
 
 interface DepartmentRepositoryInterface
 {
-    public function getAll(): mixed;
+    /**
+     * Retrieve all departments.
+     */
+    public function all(): array;
 }

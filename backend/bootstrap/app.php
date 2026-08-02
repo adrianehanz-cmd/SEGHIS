@@ -2,17 +2,12 @@
 
 declare(strict_types=1);
 
-use Dotenv\Dotenv;
-
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
+use Dotenv\Dotenv;
+
 $dotenv = Dotenv::createImmutable(dirname(__DIR__));
-
-$dotenv->safeLoad();
-
-date_default_timezone_set(
-    $_ENV['APP_TIMEZONE'] ?? 'Asia/Manila'
-);
+$dotenv->load();
 
 $container = require __DIR__ . '/container.php';
 

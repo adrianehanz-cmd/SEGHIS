@@ -5,23 +5,31 @@ declare(strict_types=1);
 namespace App\Framework\Controllers;
 
 use App\Application\UseCases\Doctors\GetDoctorsUseCase;
-use Throwable;
+use App\Framework\Http\Request;
+use App\Framework\Http\Response;
 
-final class DoctorController extends ApiController
+final class DoctorController
 {
     public function __construct(
-        private readonly GetDoctorsUseCase $getDoctors
+        private readonly GetDoctorsUseCase $useCase
     ) {
     }
 
     public function index(): void
     {
-        try {
-            $doctors = $this->getDoctors->execute();
+        Response::json(
+            $this->useCase->execute(),
+            'Doctors retrieved successfully.'
+        );
+    }
 
-            $this->success($doctors);
-        } catch (Throwable $exception) {
-            $this->handleException($exception);
-        }
+    public function show(Request $request): void
+    {
+        $id = (string) $request->query()['id'];
+
+        Response::json(
+            $this->useCase->find($id),
+            'Doctor retrieved successfully.'
+        );
     }
 }

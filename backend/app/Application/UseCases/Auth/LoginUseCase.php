@@ -4,69 +4,89 @@ declare(strict_types=1);
 
 namespace App\Application\UseCases\Auth;
 
-use App\Domain\Repositories\Auth\SessionRepositoryInterface;
-use App\Domain\Repositories\Auth\UserRepositoryInterface;
-use App\Infrastructure\Logging\AuditLogger;
-use App\Infrastructure\Security\JWTManager;
-use RuntimeException;
+use App\Application\DTOs\LoginRequest;
+use App\Application\DTOs\LoginResponse;
+use App\Domain\Repositories\UserRepositoryInterface;
+use App\Infrastructure\Security\JwtService;
+use App\Infrastructure\Security\PasswordService;
+use App\Infrastructure\Security\SessionService;
+use App\Shared\Exceptions\AuthenticationException;
 
-class LoginUseCase
+final class LoginUseCase
 {
     public function __construct(
         private readonly UserRepositoryInterface $users,
-        private readonly SessionRepositoryInterface $sessions,
-        private readonly JWTManager $jwtManager,
-        private readonly AuditLogger $auditLogger
+        private readonly PasswordService $passwordService,
+        private readonly JwtService $jwtService,
+        private readonly SessionService $sessionService
     ) {
     }
 
-    public function execute(string $username, string $password): array
-    {
-        $user = $this->users->findByUsername($username);
+    public function execute(
+        LoginRequest $request
+    ): LoginResponse {
 
-        if (!$user || !$user['is_active']) {
-            $this->auditLogger->log(null, 'login_failed', 'user', $username);
-
-            throw new RuntimeException('Invalid credentials.', 401);
-        }
-
-        if (!password_verify($password, $user['password_hash'])) {
-            $this->auditLogger->log((int) $user['id'], 'login_failed', 'user', $user['id']);
-
-            throw new RuntimeException('Invalid credentials.', 401);
-        }
-
-        $claims = [
-            'sub' => (int) $user['id'],
-            'username' => $user['username'],
-            'role' => $user['role_name'],
-        ];
-
-        $access = $this->jwtManager->generateAccessToken($claims);
-        $refresh = $this->jwtManager->generateRefreshToken(['sub' => (int) $user['id']]);
-
-        $this->sessions->create(
-            (int) $user['id'],
-            $refresh['jti'],
-            date('Y-m-d H:i:s', $refresh['expires_at']),
-            $_SERVER['REMOTE_ADDR'] ?? null,
-            $_SERVER['HTTP_USER_AGENT'] ?? null
+        $user = $this->users->findByUsername(
+            $request->username
         );
 
-        $this->users->touchLastLogin((int) $user['id']);
-        $this->auditLogger->log((int) $user['id'], 'login_success', 'user', $user['id']);
+        if ($user === null) {
+            throw new AuthenticationException(
+                'Invalid username or password.'
+            );
+        }
 
-        return [
-            'access_token' => $access['token'],
-            'refresh_token' => $refresh['token'],
-            'expires_in' => $this->jwtManager->accessTtl(),
-            'user' => [
-                'id' => (int) $user['id'],
-                'username' => $user['username'],
-                'first_name' => $user['first_name'],
-                'last_name' => $user['last_name'],
-                'role' => $user['role_name'],
-            ],
-        ];
+        if (!$user->isActive()) {
+            throw new AuthenticationException(
+                'User account is inactive.'
+            );
+        }
+
+        if (
+            !$this->passwordService->verify(
+                $request->password,
+                $user->getPassword()
+            )
+        ) {
+            throw new AuthenticationException(
+                'Invalid username or password.'
+            );
+        }
+
+        $jti = bin2hex(random_bytes(16));
+
+        $token = $this->jwtService->generate([
+            'sub' => $user->getId(),
+            'username' => $user->getUsername(),
+            'role_id' => $user->getRoleId(),
+            'jti' => $jti,
+        ]);
+
+        $expires = date(
+            'Y-m-d H:i:s',
+            time() + 3600
+        );
+
+        $this->sessionService->create(
+            $user->getId(),
+            $jti,
+            $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1',
+            $expires
+        );
+
+        $this->users->updateLastLogin(
+            $user->getId()
+        );
+
+        return new LoginResponse(
+            token: $token,
+            expiresIn: 3600,
+            user: [
+                'id' => $user->getId(),
+                'username' => $user->getUsername(),
+                'name' => $user->getFullName(),
+                'role_id' => $user->getRoleId(),
+            ]
+        );
     }
 }

@@ -63,7 +63,7 @@ class Router
         [$controllerClass, $controllerMethod] = $route;
 
         $controller = $this->container->get($controllerClass);
-        $controller->{$controllerMethod}();
+        $controller->{$controllerMethod}($request);
     }
 
     private function dispatchProtected(Request $request, array $route): void
@@ -73,7 +73,7 @@ class Router
 
         $handler = function (Request $request) use ($controllerClass, $controllerMethod): void {
             $controller = $this->container->get($controllerClass);
-            $controller->{$controllerMethod}();
+            $controller->{$controllerMethod}($request);
         };
 
         $pipeline = array_reduce(

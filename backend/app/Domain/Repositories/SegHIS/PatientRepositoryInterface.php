@@ -6,12 +6,18 @@ namespace App\Domain\Repositories\SegHIS;
 
 interface PatientRepositoryInterface
 {
-    public function getAll(): mixed;
+    /**
+     * Get all patients.
+     */
+    public function all(): array;
 
-    public function getById(string|int $id): mixed;
+    /**
+     * Find a patient by ID.
+     */
+    public function find(string $patientId): array;
 
-    public function searchByName(
-        string $firstName,
-        string $lastName
-    ): mixed;
+    /**
+     * Search patients.
+     */
+    public function search(string $keyword): array;
 }

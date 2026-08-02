@@ -6,15 +6,20 @@ namespace App\Application\UseCases\Nurses;
 
 use App\Domain\Repositories\SegHIS\NurseRepositoryInterface;
 
-class GetNursesUseCase
+final class GetNursesUseCase
 {
     public function __construct(
         private readonly NurseRepositoryInterface $repository
     ) {
     }
 
-    public function execute(): mixed
+    public function execute(): array
     {
-        return $this->repository->getAll();
+        return $this->repository->all();
+    }
+
+    public function find(string $nurseId): array
+    {
+        return $this->repository->find($nurseId);
     }
 }

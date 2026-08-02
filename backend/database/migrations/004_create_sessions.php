@@ -10,7 +10,7 @@ return function (PDO $pdo): void {
         CREATE TABLE sessions (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             user_id BIGINT UNSIGNED NOT NULL,
-            token_jti VARCHAR(255) NOT NULL UNIQUE,
+            jwt_id VARCHAR(255) NOT NULL UNIQUE,
             ip_address VARCHAR(45) NULL,
             user_agent TEXT NULL,
             expires_at TIMESTAMP NOT NULL,

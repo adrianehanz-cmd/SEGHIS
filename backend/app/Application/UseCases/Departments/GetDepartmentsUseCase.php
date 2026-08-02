@@ -6,15 +6,15 @@ namespace App\Application\UseCases\Departments;
 
 use App\Domain\Repositories\SegHIS\DepartmentRepositoryInterface;
 
-class GetDepartmentsUseCase
+final class GetDepartmentsUseCase
 {
     public function __construct(
         private readonly DepartmentRepositoryInterface $repository
     ) {
     }
 
-    public function execute(): mixed
+    public function execute(): array
     {
-        return $this->repository->getAll();
+        return $this->repository->all();
     }
 }

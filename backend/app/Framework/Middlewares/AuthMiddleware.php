@@ -1,16 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Framework\Middlewares;
 
+use App\Domain\Repositories\UserRepositoryInterface;
 use App\Framework\Http\Request;
 use App\Framework\Http\Response;
-use App\Infrastructure\Security\JWTManager;
-use Throwable;
+use App\Infrastructure\Security\JwtService;
 
-class AuthMiddleware implements MiddlewareInterface
+final class AuthMiddleware implements MiddlewareInterface
 {
     public function __construct(
-        private JWTManager $jwtManager
+        private readonly JwtService $jwt,
+        private readonly UserRepositoryInterface $users
     ) {
     }
 
@@ -18,24 +21,47 @@ class AuthMiddleware implements MiddlewareInterface
         Request $request,
         callable $next
     ): mixed {
+
         $token = $request->bearerToken();
 
         if (!$token) {
-            Response::json(null, 'Authentication required.', 401);
+            Response::json(
+                null,
+                'Authentication token missing.',
+                401
+            );
         }
 
-        try {
-            $claims = $this->jwtManager->verify($token);
-
-            if (($claims->type ?? null) !== 'access') {
-                Response::json(null, 'Invalid token type.', 401);
-            }
-
-            $GLOBALS['auth_user'] = $claims;
-
-            return $next($request);
-        } catch (Throwable) {
-            Response::json(null, 'Invalid or expired authentication token.', 401);
+        if (!$this->jwt->validate($token)) {
+            Response::json(
+                null,
+                'Invalid or expired token.',
+                401
+            );
         }
+
+        $payload = $this->jwt->payload($token);
+
+        $user = $this->users->findById(
+            (int) $payload->sub
+        );
+
+        if (!$user) {
+            Response::json(
+                null,
+                'User not found.',
+                401
+            );
+        }
+
+        $request->setUser([
+            'id'       => $user->getId(),
+            'username' => $user->getUsername(),
+            'role_id'  => $user->getRoleId(),
+            'role'     => strtolower($user->getRoleName()),
+            'name'     => $user->getFullName(),
+        ]);
+
+        return $next($request);
     }
 }

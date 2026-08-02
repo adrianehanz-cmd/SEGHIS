@@ -5,23 +5,20 @@ declare(strict_types=1);
 namespace App\Framework\Controllers;
 
 use App\Application\UseCases\Departments\GetDepartmentsUseCase;
-use Throwable;
+use App\Framework\Http\Response;
 
-final class DepartmentController extends ApiController
+final class DepartmentController
 {
     public function __construct(
-        private readonly GetDepartmentsUseCase $getDepartments
+        private readonly GetDepartmentsUseCase $useCase
     ) {
     }
 
     public function index(): void
     {
-        try {
-            $departments = $this->getDepartments->execute();
-
-            $this->success($departments);
-        } catch (Throwable $exception) {
-            $this->handleException($exception);
-        }
+        Response::json(
+            $this->useCase->execute(),
+            'Departments retrieved successfully.'
+        );
     }
 }
