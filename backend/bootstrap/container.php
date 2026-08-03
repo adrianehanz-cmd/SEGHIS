@@ -8,6 +8,7 @@ use App\Domain\Repositories\SegHIS\PatientRepositoryInterface;
 use App\Domain\Repositories\SegHIS\DepartmentRepositoryInterface;
 use App\Domain\Repositories\SegHIS\DoctorRepositoryInterface;
 use App\Domain\Repositories\SegHIS\NurseRepositoryInterface;
+use App\Domain\Repositories\SegHIS\EncounterRepositoryInterface;
 
 use App\Infrastructure\Database\Database;
 use App\Infrastructure\Logging\Logger;
@@ -19,17 +20,20 @@ use App\Infrastructure\Repositories\SegHISPatientRepository;
 use App\Infrastructure\Repositories\SegHISDepartmentRepository;
 use App\Infrastructure\Repositories\SegHISDoctorRepository;
 use App\Infrastructure\Repositories\SegHISNurseRepository;
+use App\Infrastructure\Repositories\SegHISEncounterRepository;
 
 use App\Infrastructure\ExternalAPI\SegHIS\SegHISClient;
 use App\Infrastructure\ExternalAPI\SegHIS\SegHISPatientService;
 use App\Infrastructure\ExternalAPI\SegHIS\SegHISDepartmentService;
 use App\Infrastructure\ExternalAPI\SegHIS\SegHISDoctorService;
 use App\Infrastructure\ExternalAPI\SegHIS\SegHISNurseService;
+use App\Infrastructure\ExternalAPI\SegHIS\SegHISEncounterService;
 
 use App\Application\UseCases\Patients\GetPatientsUseCase;
 use App\Application\UseCases\Departments\GetDepartmentsUseCase;
 use App\Application\UseCases\Doctors\GetDoctorsUseCase;
 use App\Application\UseCases\Nurses\GetNursesUseCase;
+use App\Application\UseCases\Nurses\GetEncounterUseCase;
 
 use DI\ContainerBuilder;
 
@@ -122,6 +126,13 @@ $container->set(
     )
 );
 
+$container->set(
+    SegHISEncounterService::class,
+    fn($c) => new SegHISEncounterService(
+        $c->get(SegHISClient::class)
+    )
+);
+
 /*
 |--------------------------------------------------------------------------
 | User Repository
@@ -169,6 +180,14 @@ $container->set(
     )
 );
 
+$container->set(
+    EncounterRepositoryInterface::class,
+    fn($c) => new SegHISEncounterRepository(
+        $c->get(SegHISEncounterService::class)
+    )
+);
+
+
 /*
 |--------------------------------------------------------------------------
 | Use Cases
@@ -200,6 +219,13 @@ $container->set(
     GetNursesUseCase::class,
     fn($c) => new GetNursesUseCase(
         $c->get(NurseRepositoryInterface::class)
+    )
+);
+
+$container->set(
+    GetEncounterUseCase::class,
+    fn($c) => new GetEncounterUseCase(
+        $c->get(EncounterRepositoryInterface::class)
     )
 );
 

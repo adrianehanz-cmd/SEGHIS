@@ -7,6 +7,7 @@ use App\Framework\Controllers\DepartmentController;
 use App\Framework\Controllers\DoctorController;
 use App\Framework\Controllers\NurseController;
 use App\Framework\Controllers\PatientController;
+use App\Framework\Controllers\EncounterController;
 use App\Framework\Http\Request;
 use App\Framework\Http\Response;
 use App\Framework\Middlewares\AuthMiddleware;
@@ -81,9 +82,9 @@ return [
         '/seghis/encounter/show' => [
             'middleware' => [
                 AuthMiddleware::class,
-                fn () => new RoleMiddleware(['administrator']),
+                fn () => new RoleMiddleware(['administrator','nurse']),
             ],
-            'action' => [NurseController::class, 'index'],
+            'action' => [EncounterController::class, 'index'],
         ],
     ],
 
