@@ -14,6 +14,7 @@ use App\Domain\Repositories\SegHIS\MiscellaneousRepositoryInterface;
 use App\Domain\Repositories\SegHIS\PharmacyRepositoryInterface;
 use App\Domain\Repositories\SegHIS\PrescriptionRepositoryInterface;
 use App\Domain\Repositories\SegHIS\RadiologyRepositoryInterface;
+use App\Domain\Repositories\SegHIS\WardRepositoryInterface;
 
 use App\Infrastructure\Database\Database;
 use App\Infrastructure\Logging\Logger;
@@ -31,6 +32,7 @@ use App\Infrastructure\Repositories\SegHISMiscellaneousRepository;
 use App\Infrastructure\Repositories\SegHISPharmacyRepository;
 use App\Infrastructure\Repositories\SegHISPrescriptionRepository;
 use App\Infrastructure\Repositories\SegHISRadiologyRepository;
+use App\Infrastructure\Repositories\SegHISWardRepository;
 
 use App\Infrastructure\ExternalAPI\SegHIS\SegHISClient;
 use App\Infrastructure\ExternalAPI\SegHIS\SegHISPatientService;
@@ -43,6 +45,7 @@ use App\Infrastructure\ExternalAPI\SegHIS\SegHISMiscellaneousService;
 use App\Infrastructure\ExternalAPI\SegHIS\SegHISPharmacyService;
 use App\Infrastructure\ExternalAPI\SegHIS\SegHISPrescriptionService;
 use App\Infrastructure\ExternalAPI\SegHIS\SegHISRadiologyService;
+use App\Infrastructure\ExternalAPI\SegHIS\SegHISWardService;
 
 use App\Application\UseCases\Patients\GetPatientsUseCase;
 use App\Application\UseCases\Departments\GetDepartmentsUseCase;
@@ -54,6 +57,7 @@ use App\Application\UseCases\Miscellaneous\GetMiscellaneousUseCase;
 use App\Application\UseCases\Pharmacy\GetPharmacyUseCase;
 use App\Application\UseCases\Prescription\GetPrescriptionUseCase;
 use App\Application\UseCases\Radiology\GetRadiologyUseCase;
+use App\Application\UseCases\Ward\GetWardUseCase;
 
 use DI\ContainerBuilder;
 
@@ -188,6 +192,13 @@ $container->set(
     )
 );
 
+$container->set(
+    SegHISWardService::class,
+    fn($c) => new SegHISWardService(
+        $c->get(SegHISClient::class)
+    )
+);
+
 /*
 |--------------------------------------------------------------------------
 | User Repository
@@ -276,6 +287,14 @@ $container->set(
         $c->get(SegHISPrescriptionService::class)
     )
 );
+
+$container->set(
+    WardRepositoryInterface::class,
+    fn($c) => new SegHISWardRepository(
+        $c->get(SegHISWardService::class)
+    )
+);
+
 /*
 |--------------------------------------------------------------------------
 | Use Cases
@@ -349,6 +368,13 @@ $container->set(
     GetRadiologyUseCase::class,
     fn($c) => new GetRadiologyUseCase(
         $c->get(RadiologyRepositoryInterface::class)
+    )
+);
+
+$container->set(
+    GetWardUseCase::class,
+    fn($c) => new GetWardUseCase(
+        $c->get(WardRepositoryInterface::class)
     )
 );
 

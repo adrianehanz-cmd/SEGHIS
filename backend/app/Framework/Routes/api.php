@@ -13,6 +13,7 @@ use App\Framework\Controllers\MiscellaneousController;
 use App\Framework\Controllers\PharmacyController;
 use App\Framework\Controllers\PrescriptionController;
 use App\Framework\Controllers\RadiologyController;
+use App\Framework\Controllers\WardController;
 use App\Framework\Http\Request;
 use App\Framework\Http\Response;
 use App\Framework\Middlewares\AuthMiddleware;
@@ -130,6 +131,14 @@ return [
                 fn () => new RoleMiddleware(['administrator','nurse','doctor']),
             ],
             'action' => [PrescriptionController::class, 'index'],
+        ],
+
+        '/seghis/ward/show' => [
+            'middleware' => [
+                AuthMiddleware::class,
+                fn () => new RoleMiddleware(['administrator','nurse','doctor']),
+            ],
+            'action' => [WardController::class, 'index'],
         ],
     ],
 
