@@ -83,17 +83,12 @@ final class SegHISClient
 
 
         } catch (GuzzleException $exception) {
-
-
-            throw new RuntimeException(
-
-                'SegHIS GET failed: '
-                .
-                $exception->getMessage()
-
-            );
-
-        }
+    throw new RuntimeException(
+        'SegHIS GET failed: ' . $exception->getMessage()
+        . ' | Previous: ' . ($exception->getPrevious()?->getMessage() ?? 'none')
+        . ' | Trace: ' . $exception->getTraceAsString()
+    );
+}
 
     }
 

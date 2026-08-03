@@ -10,6 +10,9 @@ use App\Framework\Controllers\PatientController;
 use App\Framework\Controllers\EncounterController;
 use App\Framework\Controllers\LaboratoryController;
 use App\Framework\Controllers\MiscellaneousController;
+use App\Framework\Controllers\PharmacyController;
+use App\Framework\Controllers\PrescriptionController;
+use App\Framework\Controllers\RadiologyController;
 use App\Framework\Http\Request;
 use App\Framework\Http\Response;
 use App\Framework\Middlewares\AuthMiddleware;
@@ -103,6 +106,30 @@ return [
                 fn () => new RoleMiddleware(['administrator','nurse','doctor']),
             ],
             'action' => [MiscellaneousController::class, 'index'],
+        ],
+
+        '/seghis/pharmacy/show' => [
+            'middleware' => [
+                AuthMiddleware::class,
+                fn () => new RoleMiddleware(['administrator','nurse','doctor']),
+            ],
+            'action' => [PharmacyController::class, 'index'],
+        ],
+
+        '/seghis/radiology/show' => [
+            'middleware' => [
+                AuthMiddleware::class,
+                fn () => new RoleMiddleware(['administrator','nurse','doctor']),
+            ],
+            'action' => [RadiologyController::class, 'index'],
+        ],
+
+        '/seghis/prescription/show' => [
+            'middleware' => [
+                AuthMiddleware::class,
+                fn () => new RoleMiddleware(['administrator','nurse','doctor']),
+            ],
+            'action' => [PrescriptionController::class, 'index'],
         ],
     ],
 
