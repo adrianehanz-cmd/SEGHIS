@@ -1,0 +1,35 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Framework\Controllers;
+
+use App\Application\UseCases\Miscellaneous\GetMiscellaneousUseCase;
+use App\Framework\Http\Request;
+use App\Framework\Http\Response;
+
+final class MiscellaneousController
+{
+    public function __construct(
+        private readonly GetMiscellaneousUseCase $useCase
+    ) {
+    }
+
+    public function index(): void
+    {
+        Response::json(
+            $this->useCase->execute(),
+            'Miscellaneous items retrieved successfully.'
+        );
+    }
+
+    public function show(Request $request): void
+    {
+        $id = (string) $request->query()['id'];
+
+        Response::json(
+            $this->useCase->find($id),
+            'Miscellaneous item retrieved successfully.'
+        );
+    }
+}

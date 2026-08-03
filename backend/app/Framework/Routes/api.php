@@ -9,6 +9,7 @@ use App\Framework\Controllers\NurseController;
 use App\Framework\Controllers\PatientController;
 use App\Framework\Controllers\EncounterController;
 use App\Framework\Controllers\LaboratoryController;
+use App\Framework\Controllers\MiscellaneousController;
 use App\Framework\Http\Request;
 use App\Framework\Http\Response;
 use App\Framework\Middlewares\AuthMiddleware;
@@ -94,6 +95,14 @@ return [
                 fn () => new RoleMiddleware(['administrator','nurse','doctor']),
             ],
             'action' => [LaboratoryController::class, 'index'],
+        ],
+
+        '/seghis/miscellaneous/show' => [
+            'middleware' => [
+                AuthMiddleware::class,
+                fn () => new RoleMiddleware(['administrator','nurse','doctor']),
+            ],
+            'action' => [MiscellaneousController::class, 'index'],
         ],
     ],
 
