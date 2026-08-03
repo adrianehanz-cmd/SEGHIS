@@ -9,6 +9,7 @@ use App\Domain\Repositories\SegHIS\DepartmentRepositoryInterface;
 use App\Domain\Repositories\SegHIS\DoctorRepositoryInterface;
 use App\Domain\Repositories\SegHIS\NurseRepositoryInterface;
 use App\Domain\Repositories\SegHIS\EncounterRepositoryInterface;
+use App\Domain\Repositories\SegHIS\LaboratoryRepositoryInterface;
 
 use App\Infrastructure\Database\Database;
 use App\Infrastructure\Logging\Logger;
@@ -21,6 +22,7 @@ use App\Infrastructure\Repositories\SegHISDepartmentRepository;
 use App\Infrastructure\Repositories\SegHISDoctorRepository;
 use App\Infrastructure\Repositories\SegHISNurseRepository;
 use App\Infrastructure\Repositories\SegHISEncounterRepository;
+use App\Infrastructure\Repositories\SegHISLaboratoryRepository;
 
 use App\Infrastructure\ExternalAPI\SegHIS\SegHISClient;
 use App\Infrastructure\ExternalAPI\SegHIS\SegHISPatientService;
@@ -28,12 +30,14 @@ use App\Infrastructure\ExternalAPI\SegHIS\SegHISDepartmentService;
 use App\Infrastructure\ExternalAPI\SegHIS\SegHISDoctorService;
 use App\Infrastructure\ExternalAPI\SegHIS\SegHISNurseService;
 use App\Infrastructure\ExternalAPI\SegHIS\SegHISEncounterService;
+use App\Infrastructure\ExternalAPI\SegHIS\SegHISLaboratoryService;
 
 use App\Application\UseCases\Patients\GetPatientsUseCase;
 use App\Application\UseCases\Departments\GetDepartmentsUseCase;
 use App\Application\UseCases\Doctors\GetDoctorsUseCase;
 use App\Application\UseCases\Nurses\GetNursesUseCase;
 use App\Application\UseCases\Nurses\GetEncounterUseCase;
+use App\Application\UseCases\Nurses\GetLaboratoryUseCase;
 
 use DI\ContainerBuilder;
 
@@ -133,6 +137,13 @@ $container->set(
     )
 );
 
+$container->set(
+    SegHISLaboratoryService::class,
+    fn($c) => new SegHISLaboratoryService(
+        $c->get(SegHISClient::class)
+    )
+);
+
 /*
 |--------------------------------------------------------------------------
 | User Repository
@@ -187,6 +198,13 @@ $container->set(
     )
 );
 
+$container->set(
+    LaboratoryRepositoryInterface::class,
+    fn($c) => new SegHISLaboratoryRepository(
+        $c->get(SegHISLaboratoryService::class)
+    )
+);
+
 
 /*
 |--------------------------------------------------------------------------
@@ -226,6 +244,13 @@ $container->set(
     GetEncounterUseCase::class,
     fn($c) => new GetEncounterUseCase(
         $c->get(EncounterRepositoryInterface::class)
+    )
+);
+
+$container->set(
+    GetLaboratoryUseCase::class,
+    fn($c) => new GetLaboratoryUseCase(
+        $c->get(LaboratoryRepositoryInterface::class)
     )
 );
 
