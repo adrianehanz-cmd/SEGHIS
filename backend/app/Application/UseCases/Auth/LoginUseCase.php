@@ -86,6 +86,7 @@ final class LoginUseCase
                 'username' => $user->getUsername(),
                 'name' => $user->getFullName(),
                 'role_id' => $user->getRoleId(),
+                'role' => strtolower($user->getRoleName()),
             ]
         );
     }

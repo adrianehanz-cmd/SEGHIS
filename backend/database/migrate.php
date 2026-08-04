@@ -6,9 +6,7 @@ require_once dirname(__DIR__) . '/bootstrap/app.php';
 
 use App\Infrastructure\Database\Database;
 
-$database = $container->get(Database::class);
-
-$pdo = $database->connection();
+$pdo = Database::connect();
 
 $migrationsTable = <<<'SQL'
 CREATE TABLE IF NOT EXISTS migrations (

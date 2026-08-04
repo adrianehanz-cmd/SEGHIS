@@ -3,10 +3,17 @@
 declare(strict_types=1);
 
 use App\Framework\Controllers\AuthController;
+use App\Framework\Controllers\AppointmentController;
+use App\Framework\Controllers\AddressController;
+use App\Framework\Controllers\NotificationController;
 use App\Framework\Controllers\DepartmentController;
 use App\Framework\Controllers\DoctorController;
+use App\Framework\Controllers\DoctorRecordsController;
 use App\Framework\Controllers\NurseController;
+use App\Framework\Controllers\NurseRecordsController;
 use App\Framework\Controllers\PatientController;
+use App\Framework\Controllers\PatientRecordsController;
+use App\Framework\Controllers\MedicalRecordsController;
 use App\Framework\Controllers\EncounterController;
 use App\Framework\Controllers\LaboratoryController;
 use App\Framework\Controllers\MiscellaneousController;
@@ -69,10 +76,55 @@ return [
             'action' => [PatientController::class, 'index'],
         ],
 
+        '/patients' => [
+            'middleware' => [
+                AuthMiddleware::class,
+                fn () => new RoleMiddleware(['administrator', 'doctor', 'nurse']),
+            ],
+            'action' => [PatientRecordsController::class, 'index'],
+        ],
+        '/appointments' => ['middleware' => [AuthMiddleware::class, fn () => new RoleMiddleware(['administrator', 'doctor', 'nurse'])], 'action' => [AppointmentController::class, 'index']],
+        '/appointments/patients' => ['middleware' => [AuthMiddleware::class, fn () => new RoleMiddleware(['administrator', 'doctor', 'nurse'])], 'action' => [AppointmentController::class, 'patients']],
+        '/medical-records' => ['middleware' => [AuthMiddleware::class, fn () => new RoleMiddleware(['administrator', 'doctor', 'nurse'])], 'action' => [MedicalRecordsController::class, 'index']],
+
+        '/doctors' => [
+            'middleware' => [
+                AuthMiddleware::class,
+                fn () => new RoleMiddleware(['administrator', 'doctor', 'nurse']),
+            ],
+            'action' => [DoctorRecordsController::class, 'index'],
+        ],
+
+        '/nurses' => [
+            'middleware' => [AuthMiddleware::class, fn () => new RoleMiddleware(['administrator', 'doctor', 'nurse'])],
+            'action' => [NurseRecordsController::class, 'index'],
+        ],
+
+        '/locations/regions' => [
+            'middleware' => [AuthMiddleware::class],
+            'action' => [AddressController::class, 'regions'],
+        ],
+        '/locations/provinces' => [
+            'middleware' => [AuthMiddleware::class],
+            'action' => [AddressController::class, 'provinces'],
+        ],
+        '/locations/municipalities' => [
+            'middleware' => [AuthMiddleware::class],
+            'action' => [AddressController::class, 'municipalities'],
+        ],
+        '/locations/barangays' => [
+            'middleware' => [AuthMiddleware::class],
+            'action' => [AddressController::class, 'barangays'],
+        ],
+        '/notifications' => [
+            'middleware' => [AuthMiddleware::class],
+            'action' => [NotificationController::class, 'index'],
+        ],
+
         '/seghis/doctors/show'=>[
               'middleware'=>[
                 AuthMiddleware::class,
-                fn()=>new RoleMiddleware(['administrator']),
+                fn()=>new RoleMiddleware(['administrator', 'doctor', 'nurse']),
             ],
             'action'=>[DoctorController::class,'index']
         ],
@@ -80,7 +132,7 @@ return [
         '/seghis/nurses/show' => [
             'middleware' => [
                 AuthMiddleware::class,
-                fn () => new RoleMiddleware(['administrator']),
+                fn () => new RoleMiddleware(['administrator', 'doctor', 'nurse']),
             ],
             'action' => [NurseController::class, 'index'],
         ],
@@ -144,18 +196,38 @@ return [
 
     'POST' => [
         '/auth/login' => [AuthController::class, 'login'],
+        '/auth/register' => [AuthController::class, 'register'],
         '/auth/refresh' => [AuthController::class, 'refresh'],
 
         '/auth/logout' => [
             'middleware' => [AuthMiddleware::class],
             'action' => [AuthController::class, 'logout'],
         ],
+        '/appointments' => ['middleware' => [AuthMiddleware::class, fn () => new RoleMiddleware(['administrator', 'doctor', 'nurse'])], 'action' => [AppointmentController::class, 'store']],
+        '/doctors' => ['middleware' => [AuthMiddleware::class, fn () => new RoleMiddleware(['administrator'])], 'action' => [DoctorRecordsController::class, 'index']],
+        '/patients' => [
+            'middleware' => [
+                AuthMiddleware::class,
+                fn () => new RoleMiddleware(['administrator', 'doctor', 'nurse']),
+            ],
+            'action' => [PatientRecordsController::class, 'store'],
+        ],
+        '/doctors' => ['middleware' => [AuthMiddleware::class, fn () => new RoleMiddleware(['administrator'])], 'action' => [DoctorRecordsController::class, 'store']],
+        '/nurses' => ['middleware' => [AuthMiddleware::class, fn () => new RoleMiddleware(['administrator'])], 'action' => [NurseRecordsController::class, 'store']],
     ],
 
     'PUT' => [],
 
-    'PATCH' => [],
+    'PATCH' => [
+        '/appointments' => ['middleware' => [AuthMiddleware::class, fn () => new RoleMiddleware(['administrator', 'doctor', 'nurse'])], 'action' => [AppointmentController::class, 'update']],
+        '/appointments/status' => ['middleware' => [AuthMiddleware::class, fn () => new RoleMiddleware(['administrator', 'doctor', 'nurse'])], 'action' => [AppointmentController::class, 'updateStatus']],
+        '/patients' => ['middleware' => [AuthMiddleware::class, fn () => new RoleMiddleware(['administrator', 'doctor', 'nurse'])], 'action' => [PatientRecordsController::class, 'update']],
+        '/notifications/read' => ['middleware' => [AuthMiddleware::class], 'action' => [NotificationController::class, 'markAllRead']],
+    ],
 
-    'DELETE' => [],
+    'DELETE' => [
+        '/appointments' => ['middleware' => [AuthMiddleware::class, fn () => new RoleMiddleware(['administrator', 'doctor', 'nurse'])], 'action' => [AppointmentController::class, 'destroy']],
+        '/patients' => ['middleware' => [AuthMiddleware::class, fn () => new RoleMiddleware(['administrator', 'doctor', 'nurse'])], 'action' => [PatientRecordsController::class, 'destroy']],
+    ],
 
 ];
